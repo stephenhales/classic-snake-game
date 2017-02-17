@@ -1,6 +1,6 @@
 snake = [[]];
 snakeMove = [[]];
-grids = 20;
+grids = 40;
 dx = 0;
 dy = -1;
 apple = [];
@@ -8,7 +8,7 @@ apple = [];
 window.onload = function(){
   c = document.getElementById('gc');
   cc = c.getContext('2d');
-  setInterval(update,1000/10);
+  setInterval(update,1000/15);
   window.addEventListener('keydown',this.checkKeys,false);
   scale = c.width / grids;
   resetSnake();
