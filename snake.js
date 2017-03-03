@@ -1,131 +1,212 @@
-snake = [[]];
-snakeMove = [[]];
 grids = 40;
-dx = 0;
-dy = -1;
-apple = [];
 
 window.onload = function(){
   c = document.getElementById('gc');
   cc = c.getContext('2d');
-  setInterval(update,1000/15);
-  window.addEventListener('keydown',this.checkKeys,false);
   scale = c.width / grids;
-  resetSnake();
-  appleReset();
+
+  var player = new Player(37, 38, 39, 40);
+  var apple = new Apple();
+  game = new GameSettings("hardBounds", player,apple);
+  window.addEventListener('keydown',game.checkKeys,false);
+  setInterval(update,1000/15, game);
 }
 
-function  update(){
+function  update(game){
   cc.fillStyle = 'black';
   cc.fillRect(0,0,c.width,c.height);
-  placeApple();
-  moveSnake();
+  game.apple.place();
+  game.player.snake.move();
 }
 
-function resetSnake(){
-  mid = parseInt(grids/2);
-  snake = snakeMove = [[mid,mid],[mid,mid+1],[mid,mid+2],[mid,mid+3]];
-  dx = 0;
-  dy = -1;
-}
+class Snake{
+  constructor(body, dx, dy, score){
+    this.body = body;
+    this.dx = dx;
+    this.dy = dy;
+    this.score = score;
+    this.reset();
+  }
 
-function moveSnake(){
-  newHead(dx, dy);
-  addBody();
-  checkDead();
-  snake = snakeMove;
-  snake.forEach(buildSnake);
-}
+  reset(){
+    var mid = parseInt(grids/2);
+    this.body = [[mid,mid],[mid,mid+1],[mid,mid+2],[mid,mid+3]];
+    this.dx = 0;
+    this.dy = -1;
+    this.score = 0;
+  }
 
-function buildSnake(element, index, array){
-  console.log('a[' + index + '] = ' + element);
-  x = element[0];
-  y = element[1];
-  cc.fillStyle = 'white';
-  cc.fillRect(x*scale, y*scale, scale, scale);
-}
-
-function newHead(dx, dy){
-  //get head coordinates
-  x = snake[0][0] + dx;
-  y = snake[0][1] + dy;
-  //add the head to the array
-  snakeMove = [[x,y]];
-  hardBounds(x,y);
-}
-
-function addBody(){
-  snake.forEach(function(element, index){
-    snakeMove.push(element);
-    if(snake.length-2 == index){
-      snake.shift();
-    }
-  });
-}
-
-function checkDead(){
-  snake.forEach(function(element){
-    if(snakeMove[0][0] == element[0] && snakeMove[0][1] == element[1]){
-      dead();
-    }
-  });
-}
-
-function dead(){
-    resetSnake();
-}
-
-function placeApple(){
-  cc.fillStyle = 'red';
-  cc.fillRect(apple[0]*scale, apple[1]*scale, scale, scale);
-  //if apple location equal to the head location, reset the apple position
-  if(apple[0] == snake[0][0] && apple[1] == snake[0][1]){
-    appleReset();
-    snake.forEach(function(element, index){
-      if(snake.length-1 == index){
-        snakeMove.push(element);
-      }
+  place(){
+    this.body.forEach(function(element, index){
+      console.log('a[' + index + '] = ' + element);
+      var x = element[0];
+      var y = element[1];
+      cc.fillStyle = 'white';
+      cc.fillRect(x*scale, y*scale, scale, scale);
     });
-    snake = snakeMove;
+  }
+
+  move(){
+    var newLocation = this.newLocation();
+    if(this.checkIsDead(newLocation)){ return; }
+    if(game.checkBounds(newLocation)){ return; }
+    this.checkIfAte(newLocation);
+    this.body = newLocation;
+    this.place();
+  }
+
+  newLocation(){
+    var x = this.body[0][0] + this.dx;
+    var y = this.body[0][1] + this.dy;
+    var newLocation = [[x,y]];
+    for(var i = 0; i < this.body.length-1; i++){
+      newLocation.push(this.body[i]);
+    }
+    return newLocation;
+  }
+
+  checkIsDead(newLocation){
+    var head = newLocation[0];
+    for(var i = 0; i < this.body.length-1; i++){
+      if(this.body[i][0] == head[0]){
+        if(this.body[i][1] == head[1]){
+          this.dead();
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  checkIfAte(newLocation){
+    var head = newLocation[0];
+    if(head[1] == game.apple.y){
+      if(head[0] == game.apple.x){
+        //add tail
+        newLocation.push(this.body[this.body.length-1]);
+        this.score++;
+        game.apple.reset();
+      }
+    }
+  }
+
+  dead(){
+    cc.fillStyle = 'red';
+    cc.fillRect(0,0,c.width,c.height);
+    setTimeout(200);
+    this.reset();
   }
 }
 
-function appleReset(){
-  x = parseInt(Math.random()*grids)
-  y = parseInt(Math.random()*grids);
-  apple = [x,y];
-  placeApple();
-}
+class Apple{
+  constructor(x,y){
+    this.x = x;
+    this.y = y;
+    this.reset();
+  }
 
-function checkKeys(e) {
-  code = e.keyCode;
-  switch (code) {
-      case 37:
-            dx = - 1;
-            dy = 0;
-            break; //Left key
-      case 38:
-            dx = 0;
-            dy = -1;
-            break; //Up key
-      case 39:
-            dx = 1;
-            dy = 0;
-            break; //Right key
-      case 40:
-            dx = 0;
-            dy = 1;
-            break; //Down key
-      default:
-            //alert("pls no. no press"); //Everything else
+  reset(){
+    this.x = parseInt(Math.random()*grids)
+    this.y = parseInt(Math.random()*grids);
+  }
+
+  place(){
+    cc.fillStyle = 'red';
+    cc.fillRect(this.x*scale, this.y*scale, scale, scale);
   }
 }
 
-function hardBounds(x, y){
-  if(x>grids || x<0){
-    dead();
+class Player{
+  constructor(left, up, right, down){
+    this.left = left;
+    this.up = up;
+    this.right = right;
+    this.down = down;
+    this.snake = new Snake();
   }
-  if(y>grids || y<0){
-    dead();
+}
+
+class GameSettings{
+  constructor(bounds, player, apple){
+    this.bounds = bounds;
+    this.player = player;
+    this.apple = apple;
+  }
+  //if(players == 2) make second player
+
+  checkBounds(newLocation){
+    var x = newLocation[0][0];
+    var y = newLocation[0][1];
+    var dead;
+    if(this.bounds == "hardBounds"){
+      dead = this.hardBounds(x,y);
+    }
+    else if(this.bounds == "hardBounds"){
+      dead = this.wrapBounds(x,y);
+    }
+    return dead;
+  }
+
+  hardBounds(x, y){
+    if(x>grids || x<0){
+      this.player.snake.dead();
+      return true;
+    }
+    if(y>grids || y<0){
+      this.player.snake.dead();
+      return true;
+    }
+    return false;
+  }
+
+  wrapBounds(x, y){
+    //wrap around if going off screen
+    if(x > grids){ //going left
+      x = 0;
+      snake[index][0] = x
+    }
+    if(x < 0){ //going right
+      x = grids-1;
+      snake[index][0] = x
+    }
+    if(y > grids-1){ //going down
+      y = 0;
+      snake[index][1] = y
+    }
+    if(y < 0){ //going up
+      y = grids;
+      snake[index][1] = y
+    }
+  }
+
+  checkKeys(e) {
+    var snake = this.game.player.snake;
+    var code = e.keyCode;
+    var dx;
+    var dy;
+
+    //change this to be list of active buttons from players
+    switch (code) {
+        case 37:
+              dx = - 1;
+              dy = 0;
+              break; //Left key
+        case 38:
+              dx = 0;
+              dy = -1;
+              break; //Up key
+        case 39:
+              dx = 1;
+              dy = 0;
+              break; //Right key
+        case 40:
+              dx = 0;
+              dy = 1;
+              break; //Down key
+        default:
+              //alert("pls no. no press"); //Everything else
+    }
+    snake.dx = dx;
+    snake.dy = dy;
   }
 }
