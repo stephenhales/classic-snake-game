@@ -20,11 +20,7 @@ function  update(game){
 }
 
 class Snake{
-  constructor(body, dx, dy, score){
-    this.body = body;
-    this.dx = dx;
-    this.dy = dy;
-    this.score = score;
+  constructor(){
     this.reset();
   }
 
@@ -141,8 +137,9 @@ class GameSettings{
     if(this.bounds == "hardBounds"){
       dead = this.hardBounds(x,y);
     }
-    else if(this.bounds == "hardBounds"){
-      dead = this.wrapBounds(x,y);
+    else if(this.bounds == "wrapBounds"){
+      this.wrapBounds(newLocation);
+      dead = false;   //can't die from hitting the edges
     }
     return dead;
   }
@@ -159,31 +156,37 @@ class GameSettings{
     return false;
   }
 
-  wrapBounds(x, y){
+  wrapBounds(newLocation){
     //wrap around if going off screen
-    if(x > grids){ //going left
+    var snakeBody = this.player.snake.body;
+    var x = newLocation[0][0];
+    var y = newLocation[0][1];
+
+    if(x > grids){ //going right
       x = 0;
-      snake[index][0] = x
+      snakeBody[0][0] = x;
     }
-    if(x < 0){ //going right
+    if(x < -1){ //going left
       x = grids-1;
-      snake[index][0] = x
+      snakeBody[0][0] = x;
     }
-    if(y > grids-1){ //going down
+    if(y > grids){ //going down
       y = 0;
-      snake[index][1] = y
+      snakeBody[0][1] = y;
     }
-    if(y < 0){ //going up
+    if(y < -1){ //going up
       y = grids;
-      snake[index][1] = y
+      snakeBody[0][1] = y;
     }
+    newLocation[0][0] = x;
+    newLocation[0][1] = y;
   }
 
   checkKeys(e) {
     var snake = this.game.player.snake;
     var code = e.keyCode;
-    var dx;
-    var dy;
+    var dx = snake.dx;
+    var dy = snake.dy;
 
     //change this to be list of active buttons from players
     switch (code) {
